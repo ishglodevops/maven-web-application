@@ -1,0 +1,67 @@
+pipeline{
+  agent any 
+  tools {
+    maven "maven3.8.6"
+  }  
+  stages {
+    stage('1GetCode'){
+      steps{
+          sh "echo 'cloning the latest application version' "
+             git branch: 'feature', credentialsId: 'GitHUBCredentials', url: 'https://github.com/ishglodevops/maven-web-application'
+          }
+      }
+    stage('2Test+Build'){
+      steps{
+         sh "echo 'running JUnit-test-cases' "
+            sh "echo 'testing must passed to create artifacts ' "
+            sh "mvn clean package"
+         }
+      }
+    stage('3CodeQuality'){
+      steps{
+         sh "echo 'Perfoming CodeQualityAnalysis' "
+            sh "mvn sonar:sonar"
+         }
+      }
+    stage('4uploadNexus'){
+      steps{
+          sh "mvn deploy"
+         }
+      }
+    stage('5deploy2uat'){
+      steps{
+         deploy adapters: [tomcat9(credentialsId: 'Tomcat Credentials', path: '', url: 'http://172.31.90.87:8080')], contextPath: null, war: 'target/*.*'
+         }
+      }
+    stage('6approval'){
+      steps{
+        sh "echo 'Waiting for Approval'"
+        timeout(time:5, unit:'DAYS') {
+        input message: 'Application ready for deployment, Please review and approve'        
+          }
+         }
+      }
+    stage('7deploy2prod'){
+      steps{
+          deploy adapters: [tomcat9(credentialsId: 'Tomcat Credentials', path: '', url: 'http://172.31.90.87:8080')], contextPath: null, war: 'target/*.*'
+         }
+      }
+      }
+post{
+    always{
+       emailext body: '''All,
+      Please review the Status of the build.
+-Thanks Devops Engineer Team''', recipientProviders: [buildUser(), developers(), contributor(), upstreamDevelopers()], subject: 'Build Status', to: 'ishglo.devops@gmail.com'
+       }
+    success{
+      emailext body: '''All,
+        The following Build has completed in production, Please review
+   -Thanks Devops Engineer Team''', recipientProviders: [buildUser(), developers(), contributor(), upstreamDevelopers()], subject:   'Build Status', to: 'ishglo.devops@gmail.com'
+      }
+    failure{
+        emailext body: '''All,
+      Build Failed, Please review!
+-Thanks Devops Engineer Team''', recipientProviders: [buildUser(), developers(), contributor(), upstreamDevelopers()], subject: 'Build Status', to: 'ishglo.devops@gmail.com'
+      }
+    }
+}
