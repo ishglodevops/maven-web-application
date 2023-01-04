@@ -33,7 +33,7 @@ pipeline{
          deploy adapters: [tomcat9(credentialsId: 'Tomcat Credentials', path: '', url: 'http://172.31.90.87:8080')], contextPath: null, war: 'target/*.*'
          }
       }
-    stage('6approval'){
+   /* stage('6approval'){
       steps{
         sh "echo 'Waiting for Approval'"
         timeout(time:5, unit:'DAYS') {
@@ -45,7 +45,7 @@ pipeline{
       steps{
           deploy adapters: [tomcat9(credentialsId: 'Tomcat Credentials', path: '', url: 'http://172.31.90.87:8080')], contextPath: null, war: 'target/*.*'
          }
-      }
+      } */
       }
 post{
     always{
@@ -65,3 +65,4 @@ post{
       }
     }
 }
+
